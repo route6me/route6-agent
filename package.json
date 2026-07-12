@@ -1,0 +1,38 @@
+{
+  "name": "@route6/agent",
+  "version": "0.1.1",
+  "description": "Route6 thin client — hold a long-lived tunnel to gw.route6.me so *.on.route6.me hostnames reach your localhost ports, and expose a local MCP proxy for Cursor / Claude Code / any MCP-aware editor. Get an API key at https://route6.me",
+  "license": "MIT",
+  "author": "M3T Projekt d.o.o. (https://route6.me)",
+  "homepage": "https://route6.me",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/route6me/route6-agent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/route6me/route6-agent/issues",
+    "email": "info@route6.me"
+  },
+  "keywords": ["route6", "mcp", "tunnel", "ipv6", "agent", "ai-agent", "model-context-protocol"],
+  "type": "module",
+  "main": "dist/cli.js",
+  "bin": {
+    "route6": "dist/cli.js"
+  },
+  "files": ["dist/**/*", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsc -p .",
+    "clean": "rm -rf dist",
+    "prepack": "npm run clean && npm run build",
+    "start": "node dist/cli.js"
+  },
+  "engines": { "node": ">=20.0.0" },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "pino": "^9.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "typescript": "^5.6.0"
+  }
+}
