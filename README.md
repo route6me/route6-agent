@@ -81,7 +81,7 @@ Both arrive at `my-api.on.route6.me` / `my-site.on.route6.me` simultaneously.
 | Raw TCP/UDP forwarding | Not in v1 (HTTPS only) | Yes |
 | MCP tools | All 28 | All 28 |
 
-Switch between tiers any time: `curl -X POST -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' -d '{"type":"http_tunnel"}' https://api.route6.me/api/v1/me/connection-type`
+Switching between tiers is automatic: start the other client type and Route6 detects it and switches the agent (DNS + egress included) within a minute. Manual override: `curl -X POST -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' -d '{"type":"http_tunnel"}' https://api.route6.me/api/v1/me/connection-type`
 
 ## Links
 
