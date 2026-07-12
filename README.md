@@ -92,4 +92,4 @@ Switch between tiers any time: `curl -X POST -H "Authorization: Bearer $KEY" -H 
 
 ## License
 
-MIT © [M3T Projekt d.o.o.](https://route6.me) — the client is open source; the Route6 network service it connects to is a commercial product.
+MIT © [Route6](https://route6.me) — the client is open source; the Route6 network service it connects to is a commercial product.
