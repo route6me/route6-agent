@@ -121,7 +121,9 @@ tunnel
             process.exit(1);
         }
         for (const [h, t] of pairs) {
-            process.stdout.write(`  → ${h}.on.route6.me  →  ${t}\n`);
+            const fq = h.endsWith(".on.route6.me") || h.endsWith(".mesh.route6.me") ? h : `${h}.on.route6.me`;
+            process.stdout.write(`  → ${fq}  →  ${t}
+`);
         }
         const tc = new TunnelClient({
             onFrame: async (frame) => { await fwd.handlerForTunnel(frame); },

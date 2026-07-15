@@ -99,7 +99,9 @@ export class Forwarder {
 
 function toFqdn(name: string): string {
     const lower = name.toLowerCase();
-    if (lower.endsWith(".on.route6.me")) return lower;
+    // .mesh.route6.me names pass through untouched (private mesh endpoints,
+    // feature-mesh-webhook WU-2.7) — only bare labels get the public suffix.
+    if (lower.endsWith(".on.route6.me") || lower.endsWith(".mesh.route6.me")) return lower;
     return `${lower}.on.route6.me`;
 }
 

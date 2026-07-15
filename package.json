@@ -1,6 +1,6 @@
 {
   "name": "@route6/agent",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Route6 thin client — hold a long-lived tunnel to gw.route6.me so *.on.route6.me hostnames reach your localhost ports, and expose a local MCP proxy for Cursor / Claude Code / any MCP-aware editor. Get an API key at https://route6.me",
   "license": "MIT",
   "author": "Route6 (https://route6.me)",
