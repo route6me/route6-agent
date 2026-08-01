@@ -1,95 +1,74 @@
 # @route6/agent
 
-Thin client for [Route6](https://route6.me) — the agentic AI network. Run it on your laptop or a hosted VM to:
+Installs and runs the [Route6](https://route6.me) client.
 
-1. Tunnel local ports out to a `*.on.route6.me` public hostname (no Docker, no kernel module, no port-forward dance on your home router).
-2. Expose a local MCP proxy at `http://127.0.0.1:3000/mcp` that gives Cursor / Claude Code / Cline / any MCP-aware editor access to all 28 Route6 MCP tools using your account's API key.
+Route6 gives an AI agent its own **public IPv6 `/64`**, an MCP endpoint on
+`localhost`, and an egress proxy so its traffic leaves from that identity.
 
-Designed for the lite (HTTP gateway) tier. If you already run the `route6me/netid` Docker container (Pro tier), you don't need this.
-
-## Install
+This package is a **launcher**. It downloads the `r6me` binary for your platform,
+verifies it against the published checksums, and runs it. It implements no
+protocol of its own and has **no dependencies**.
 
 ```bash
 npm install -g @route6/agent
+route6 up
+route6 status
 ```
 
-Requires Node.js 20 or later. Works on macOS (arm64 / x64), Linux x64, and WSL2.
+Then point any MCP client at `http://localhost:3000/mcp`.
 
-## Quick start
+## Configure
+
+The client reads `~/.r6me/config.toml`:
 
 ```bash
-# 1. Get an API key from https://route6.me/dashboard (or use one you already have).
-route6 login sk_a6_<your-api-key>
-
-# 2. Start anything on a local port, e.g.:
-python3 -m http.server 3000 &
-
-# 3. Tunnel it.
-route6 tunnel start --hostname my-app --to 3000
+mkdir -p ~/.r6me && chmod 700 ~/.r6me
+echo 'api_key = "sk_a6_your_key_here"' > ~/.r6me/config.toml
+chmod 600 ~/.r6me/config.toml
 ```
 
-In another terminal:
-
-```bash
-curl https://my-app.on.route6.me/
-# → your python http.server's directory listing, served over the public internet.
-```
-
-Your MCP proxy is also live at `http://127.0.0.1:3000/mcp` — point your editor at it.
+`ROUTE6_API_KEY` in the environment works too. Get a key at
+[route6.me](https://route6.me/register) — the free tier needs no card.
 
 ## Commands
 
-| Command | Purpose |
-|--------|---------|
-| `route6 login <api_key>` | Save the API key to `~/.route6/config.json` (mode 0600) and verify against the gateway. |
-| `route6 logout` | Clear the stored API key. |
-| `route6 status` | Print config + `GET /whoami` from the gateway. |
-| `route6 tunnel start --hostname X --to PORT` | Open the inbound tunnel + start the local MCP proxy. Pair `--hostname` and `--to` repeat-by-repeat for multi-host. |
-| `route6 tunnel start --no-mcp …` | Tunnel only, skip the MCP proxy. |
-| `route6 tunnel stop` | (Foreground: just Ctrl+C the running `start`.) |
-| `route6 mcp serve --port 3000` | MCP-only mode (no inbound tunnel) — useful for hosted agents that just want the local MCP proxy. |
+| Command | |
+| --- | --- |
+| `route6 up` | connect the daemon |
+| `route6 down` | disconnect |
+| `route6 status` | transport state, config generation, forwards, MCP endpoint |
+| `route6 ssh <name>` | shell on a team-mate over the private mesh (Team plans) |
+| `route6 version` | print the client version |
+| `route6 upgrade` | re-fetch the current stable binary |
 
-### Multiple hostnames
+Anything else is passed straight through to the binary.
 
-```bash
-route6 tunnel start \
-  --hostname my-api  --to 8080 \
-  --hostname my-site --to 3000
-```
+## How the download works
 
-Both arrive at `my-api.on.route6.me` / `my-site.on.route6.me` simultaneously.
+On first use — not at install time, because `npm install --ignore-scripts` skips
+postinstall hooks and this has to behave the same everywhere — the launcher:
 
-## What gets sent where
+1. reads the current version from `https://dl.route6.me/stable`
+2. downloads the build matching your OS and architecture
+3. downloads `checksums.txt` and **verifies the sha256**, refusing to run
+   anything that does not match
+4. caches it in `~/.r6me/bin/` so later runs need no network
 
-- Inbound public requests to `<hostname>.on.route6.me` flow `internet → gw.route6.me:443 → tunnel → your localhost`. They never touch any other Route6 customer's host.
-- MCP requests to `http://127.0.0.1:3000/mcp` are forwarded to `https://gw.route6.me/mcp` with your API key as Bearer.
-- Heartbeats every 30 s keep the tunnel session live. If the network blips, the client reconnects with exponential backoff (1 → 30 s capped) and resumes the same session if it's within the 60 s window — your `*.on.route6.me` URL stays reachable through short disconnects.
+Environment overrides: `R6ME_VERSION` pins a version, `R6ME_BASE_URL` points at a
+different artifact host, `R6ME_STATE_DIR` moves the cache and config.
 
-## Privacy
+Prefer not to use npm? `curl -fsSL https://dl.route6.me/install.sh | sh` does the
+same thing, and the binaries are published at
+[dl.route6.me](https://dl.route6.me/).
 
-- API key never leaves your machine outside the gateway-bound calls.
-- We log request metadata (method, path, host, status, byte counts) but never request / response bodies.
+## Upgrading from 0.1.x
 
-## Tier comparison
+0.1.x was a thin protocol client with its own `login`, `tunnel` and `mcp serve`
+commands. That code is gone — the real client does all of it, better. The old
+commands print what to use instead:
 
-| | Lite (this client) | Pro (`route6me/netid` container) |
-|--|--|--|
-| Install | `npm i -g @route6/agent` | `docker compose up` |
-| Outbound source IP | Your /64 (preserved via the Route6 edge) | Your /64 directly (in WG tunnel) |
-| Inbound to public hostname | via `gw.route6.me` reverse tunnel | direct to your container |
-| Mesh between agents | Not in v1 | Native WireGuard |
-| Raw TCP/UDP forwarding | Not in v1 (HTTPS only) | Yes |
-| MCP tools | All 28 | All 28 |
+- `route6 login` → write `~/.r6me/config.toml` (above)
+- `route6 tunnel start` → `route6 up`, then the `port_forward_create` MCP tool
+- `route6 mcp serve` → `route6 up` serves MCP as part of running the daemon
 
-Switching between tiers is automatic: start the other client type and Route6 detects it and switches the agent (DNS + egress included) within a minute. Manual override: `curl -X POST -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' -d '{"type":"http_tunnel"}' https://api.route6.me/api/v1/me/connection-type`
-
-## Links
-
-- **Get an API key / manage your agents:** [route6.me](https://route6.me)
-- **Docs:** [docs.route6.me](https://docs.route6.me)
-- **Examples** (webhooks, clean-IP fetch, team coordination): [github.com/route6me/examples](https://github.com/route6me/examples)
-- **Python client:** [`route6` on PyPI](https://pypi.org/project/route6/) · [source](https://github.com/route6me/route6-python)
-
-## License
-
-MIT © [Route6](https://route6.me) — the client is open source; the Route6 network service it connects to is a commercial product.
+Docs: <https://docs.route6.me/quick-start/r6me>
